@@ -4,21 +4,21 @@ import { useEffect, useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const FACTS = [
-  "The concept of 'flow' was first recognized and named by psychologist Mihály Csíkszentmihályi in 1975.",
-  "Working in complete silence is often less productive than having ambient noise around 70 decibels.",
-  "It takes an average of 23 minutes and 15 seconds to return to deep focus after an interruption.",
-  "Your brain consumes about 20% of your body's energy, despite being only 2% of your weight.",
-  "The Pomodoro Technique was invented in the late 1980s by Francesco Cirillo using a tomato-shaped kitchen timer.",
-  "Dopamine isn't just about reward; it's heavily involved in motivation and the anticipation of completing tasks."
-];
-
 export default function DailyFact() {
   const [fact, setFact] = useState("");
 
   useEffect(() => {
-    // Pick a random fact
-    setFact(FACTS[Math.floor(Math.random() * FACTS.length)]);
+    async function fetchFact() {
+      try {
+        const response = await fetch("https://uselessfacts.jsph.pl/api/v2/facts/random?language=en");
+        const data = await response.json();
+        setFact(data.text);
+      } catch (error) {
+        console.error("Failed to fetch fact:", error);
+        setFact("It takes an average of 23 minutes to return to deep focus after an interruption.");
+      }
+    }
+    fetchFact();
   }, []);
 
   if (!fact) return null;

@@ -15,16 +15,21 @@ export async function POST(req: Request) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
-    // We use gemini-1.5-flash for speed and JSON structure support.
+    // Explicitly use model name string verified for current SDK
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       generationConfig: { responseMimeType: "application/json" }
     });
 
     const systemInstruction = `
       You are a super chill, lofi-style productivity assistant. You keep things calm, relaxed, yet incredibly organized.
       The user will give you a messy paragraph of their chores, tasks, and goals for the day.
-      Your job is to optimize this schedule so hard things are tackled first (deep work), leaving easier tasks for later.
+      Your job is to optimize this schedule.
+      
+      CRITICAL LOGIC:
+      1. AGENTIC PLANNING: Identify tasks that are 'Urgent' or time-sensitive based on keywords like 'now', 'deadline', 'must', or 'important'.
+      2. DEEP WORK: Frontload 'High' priority or mentally draining tasks to earlier in the day.
+      3. VIBE CHECK: Leave 'Low' priority or fun tasks for later.
       
       You must return exclusively a JSON object matching this exact TypeScript structure:
       {

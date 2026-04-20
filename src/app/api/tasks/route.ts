@@ -1,15 +1,11 @@
-import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { NextResponse } from "next/server"
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const tasks = await prisma.task.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" }
-  });
+export async function GET(req: Request) {
+  // Access control is now handled on the client-side via Firebase Security Rules.
+  // This route is maintained for legacy compatibility or background ops.
+  return NextResponse.json({ message: "Task API is now handled via Firestore." });
+}
 
   return NextResponse.json(tasks.map(t => ({
     ...t,

@@ -33,15 +33,6 @@ export default function Home() {
           </div>
           <span className="text-xl font-bold tracking-tight text-white">FlowState</span>
         </div>
-        
-        <div className="flex items-center gap-6">
-          <Link href="/login" className="text-sm font-medium text-subdued hover:text-white transition-colors">
-            Sign In
-          </Link>
-          <Link href="/signup" className="text-sm font-bold bg-white text-black px-5 py-2.5 rounded-full hover:bg-gray-200 transition-colors shadow-lg shadow-white/10">
-            Get Started
-          </Link>
-        </div>
       </nav>
 
       {/* Hero Content */}

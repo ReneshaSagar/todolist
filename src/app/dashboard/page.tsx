@@ -23,19 +23,56 @@ import { cn } from "@/lib/utils";
 import FocusMode from "@/components/dashboard/FocusMode";
 import DailyFact from "@/components/dashboard/DailyFact";
 import NeuralPlanner from "@/components/dashboard/NeuralPlanner";
+import MoodAnalyser from "@/components/dashboard/MoodAnalyser";
+import AddItemModal from "@/components/dashboard/AddItemModal";
 
 export default function Dashboard() {
   const { user, logout, loading: authLoading } = useAuth();
-  const { tasks, addTask, updateTask } = useTasks();
+  const { tasks, addTask, updateTask, deleteTask } = useTasks();
   const { isConnected, connect, currentTrack } = useSpotify();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [showItemModal, setShowItemModal] = useState<{ type: "task" | "reminder" | "event" } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
+    
+    // Request notification permission
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+          Notification.requestPermission();
+      }
+    }
   }, [user, authLoading, router]);
 
-  if (authLoading || !user) return null;
+  // Persistent Notification Engine
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+       const now = new Date();
+       tasks.forEach(task => {
+          if (!task.completed && task.scheduledAt && !task.notified) {
+             const diff = task.scheduledAt.getTime() - now.getTime();
+             if (diff <= 0 && diff > -60000) { // Trigger within 1 minute of time
+                new Notification(`FlowState Alert: ${task.title}`, {
+                   body: task.description || `Time for your ${task.type}!`,
+                   icon: "/next_icon_192.png",
+                   requireInteraction: true // Keeps it on screen until dismissed
+                });
+                // Mark as notified so it doesn't fire again
+                updateTask(task.id, { notified: true } as any);
+             }
+          }
+       });
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [tasks, updateTask]);
+
+  if (authLoading || !user) return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="flex h-screen bg-background overflow-hidden font-sans">
@@ -176,6 +213,8 @@ export default function Dashboard() {
 
                    <div className="space-y-6">
                       <DailyFact />
+                      
+                      <MoodAnalyser />
 
                       <div className="glass-panel p-6 rounded-3xl h-64 flex flex-col">
                         <h3 className="text-sm font-bold mb-auto flex items-center gap-2"><Timer size={16} /> Fast Focus</h3>
@@ -199,30 +238,62 @@ export default function Dashboard() {
                 exit={{ opacity: 0, y: -10 }}
                 className="max-w-4xl mx-auto"
               >
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                   <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
-                  <button 
-                    onClick={() => addTask({ title: "New Objective", priority: "Medium" })}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm font-bold rounded-lg shadow-lg hover:bg-brand-secondary transition-colors"
-                  >
-                    <Plus size={16} /> Create Task
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setShowItemModal({ type: "reminder" })}
+                      className="flex items-center gap-2 px-4 py-2 glass-dark text-subdued text-xs font-bold rounded-lg border border-white/5 hover:text-white transition-all"
+                    >
+                      <Plus size={14} /> Add Reminder
+                    </button>
+                    <button 
+                      onClick={() => setShowItemModal({ type: "event" })}
+                      className="flex items-center gap-2 px-4 py-2 glass-dark text-subdued text-xs font-bold rounded-lg border border-white/5 hover:text-white transition-all"
+                    >
+                      <Calendar size={14} /> Schedule Event
+                    </button>
+                    <button 
+                      onClick={() => setShowItemModal({ type: "task" })}
+                      className="flex items-center gap-2 px-4 py-2 bg-brand text-white text-xs font-bold rounded-lg shadow-lg hover:bg-brand-secondary transition-colors"
+                    >
+                      <Plus size={14} /> Create Task
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
                   {tasks.map((task) => (
-                    <div key={task.id} className="group flex items-center gap-4 p-4 glass rounded-2xl hover:border-white/10 transition-all">
+                    <div key={task.id} className="group flex items-center gap-4 p-4 glass rounded-2xl hover:border-white/10 transition-all border border-transparent">
                       <button onClick={() => updateTask(task.id, { completed: !task.completed })} className="text-white/30 hover:text-brand transition-colors">
                         {task.completed ? <CheckCircle2 className="text-brand w-6 h-6" /> : <Circle className="w-6 h-6" />}
                       </button>
+                      
                       <div className="flex-1">
-                        <h4 className={cn("text-base font-medium transition-all", task.completed && "line-through text-subdued")}>{task.title}</h4>
+                        <div className="flex items-center gap-2 mb-0.5">
+                           {task.type === "reminder" && <Bell className="w-3 h-3 text-orange-400" />}
+                           {task.type === "event" && <Calendar className="w-3 h-3 text-blue-400" />}
+                           <h4 className={cn("text-base font-medium transition-all", task.completed && "line-through text-subdued")}>{task.title}</h4>
+                        </div>
+                        {task.scheduledAt && (
+                          <p className="text-[10px] text-subdued font-bold flex items-center gap-1">
+                             <Timer className="w-3 h-3" /> {task.scheduledAt.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
                       </div>
+
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <span className={cn("text-[10px] uppercase font-bold px-2 py-1 rounded bg-white/5", 
-                           task.priority === "High" ? "text-orange-400" : "text-subdued"
+                         <span className={cn("text-[8px] uppercase font-bold px-2 py-1 rounded-md bg-white/5", 
+                           task.priority === "Urgent" ? "text-red-400 bg-red-400/10" :
+                           task.priority === "High" ? "text-orange-400 bg-orange-400/10" : "text-subdued"
                          )}>{task.priority}</span>
-                         <button className="p-1.5 text-subdued hover:text-white rounded"><MoreHorizontal size={16} /></button>
+                         
+                         <button 
+                           onClick={() => deleteTask(task.id)}
+                           className="p-1.5 text-subdued hover:text-red-400 rounded-md hover:bg-red-400/10 transition-colors"
+                         >
+                           <X size={14} />
+                         </button>
                       </div>
                     </div>
                   ))}
@@ -261,6 +332,14 @@ export default function Dashboard() {
           </AnimatePresence>
         </section>
       </main>
+
+      {/* Item Modal */}
+      {showItemModal && (
+        <AddItemModal 
+          type={showItemModal.type} 
+          onClose={() => setShowItemModal(null)} 
+        />
+      )}
     </div>
   );
 }

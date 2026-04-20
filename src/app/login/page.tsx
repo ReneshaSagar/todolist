@@ -6,27 +6,46 @@ import { LogIn, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
-  const { user, loginWithGoogle, loginWithEmail, loginAsGuest, loading } = useAuth();
+  const { user, loginWithGoogle, loginWithEmail, resetPassword, loginAsGuest, loading } = useAuth();
   const router = useRouter();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  useEffect(() => {
-    if (user) router.push("/dashboard");
-  }, [user, router]);
-
-  if (loading) return null;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
     try {
       await loginWithEmail(email, password);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to log in.");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMsg("Please enter your email address to reset your password.");
+      return;
+    }
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      await resetPassword(email);
+      setSuccessMsg("Password reset email sent! Check your inbox.");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to send reset email.");
     }
   };
 
@@ -47,6 +66,7 @@ export default function LoginPage() {
         <p className="text-subdued mb-8 font-medium">Log in to resume your OS session.</p>
         
         {errorMsg && <p className="text-red-400 text-xs font-bold bg-red-400/10 p-3 rounded-xl mb-4">{errorMsg}</p>}
+        {successMsg && <p className="text-green-400 text-xs font-bold bg-green-400/10 p-3 rounded-xl mb-4">{successMsg}</p>}
 
         <form onSubmit={handleEmailLogin} className="space-y-3 mb-6">
           <input 
@@ -65,9 +85,23 @@ export default function LoginPage() {
             className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-5 py-3 focus:outline-none focus:border-brand transition-colors text-sm"
             required
           />
-          <button type="submit" className="w-full py-4 bg-white text-black font-black rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg text-sm">
-            Sign In Securely
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full py-4 bg-white text-black font-black rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg text-sm disabled:opacity-50 disabled:cursor-wait"
+          >
+            {loading ? "Authenticating..." : "Sign In Securely"}
           </button>
+          <div className="flex justify-end">
+            <button 
+              type="button"
+              disabled={loading}
+              onClick={handleForgotPassword}
+              className="text-xs text-subdued hover:text-brand transition-colors font-semibold"
+            >
+              Forgot Password?
+            </button>
+          </div>
         </form>
 
         <div className="flex items-center gap-4 my-6 opacity-30">
@@ -79,18 +113,20 @@ export default function LoginPage() {
         <div className="space-y-4">
           <button 
             onClick={loginWithGoogle}
-            className="w-full py-3 bg-white/5 border border-white/10 text-white hover:bg-white/10 font-bold rounded-xl flex items-center justify-center gap-3 transition-colors text-sm"
+            disabled={loading}
+            className="w-full py-3 bg-white/5 border border-white/10 text-white hover:bg-white/10 font-bold rounded-xl flex items-center justify-center gap-3 transition-colors text-sm disabled:opacity-50"
           >
-            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-            Continue with Google
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5 grayscale group-hover:grayscale-0" alt="Google" />
+            {loading ? "Connecting..." : "Continue with Google"}
           </button>
 
           <button 
             onClick={loginAsGuest}
-            className="w-full py-3 bg-brand/10 border border-brand/20 text-brand font-bold rounded-xl hover:bg-brand/20 transition-all flex items-center justify-center gap-3 text-sm"
+            disabled={loading}
+            className="w-full py-3 bg-brand/10 border border-brand/20 text-brand font-bold rounded-xl hover:bg-brand/20 transition-all flex items-center justify-center gap-3 text-sm disabled:opacity-50"
           >
-            <Zap className="w-4 h-4 fill-brand" />
-            Bypass (Guest Mode)
+            <Zap className={cn("w-4 h-4 fill-brand", loading && "animate-pulse")} />
+            {loading ? "Configuring Guest OS..." : "Bypass (Guest Mode)"}
           </button>
         </div>
         

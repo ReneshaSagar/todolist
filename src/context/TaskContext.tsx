@@ -18,6 +18,7 @@ import {
 
 export type Priority = "Low" | "Medium" | "High" | "Urgent";
 export type Mood = "Lazy" | "Neutral" | "Energetic";
+export type ItemType = "task" | "reminder" | "event";
 
 export interface Task {
   id: string;
@@ -25,9 +26,12 @@ export interface Task {
   title: string;
   description?: string;
   priority: Priority;
+  type: ItemType;
   tags: string[];
   dueDate?: Date;
+  scheduledAt?: Date; /* Used for reminders and calendar events */
   completed: boolean;
+  notified?: boolean; /* Track if notification was already triggered */
   xp: number;
   subtasks: { id: string; title: string; completed: boolean }[];
   createdAt: Date;
@@ -60,20 +64,24 @@ export const TaskProvider = ({ children }: { children: React.ReactNode }) => {
 
     const q = query(
       collection(db, "tasks"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
+      where("userId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedTasks = snapshot.docs.map(doc => {
+      let fetchedTasks = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
           ...data,
           createdAt: data.createdAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate() || undefined
+          dueDate: data.dueDate?.toDate() || undefined,
+          scheduledAt: data.scheduledAt?.toDate() || undefined
         } as Task;
       });
+      
+      // Sort tasks locally to completely avoid Firebase Index requirements
+      fetchedTasks.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
       setTasks(fetchedTasks);
       setIsLoading(false);
     }, (error) => {
@@ -88,14 +96,16 @@ export const TaskProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     try {
       await addDoc(collection(db, "tasks"), {
-        ...task,
         userId: user.uid,
         title: task.title || "New Task",
+        description: task.description || "",
         priority: task.priority || "Medium",
+        type: task.type || "task",
         xp: task.xp || 20,
         completed: false,
         tags: task.tags || [],
         subtasks: task.subtasks || [],
+        scheduledAt: task.scheduledAt || null,
         createdAt: serverTimestamp()
       });
     } catch (error) {
@@ -105,7 +115,11 @@ export const TaskProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
-      await updateDoc(doc(db, "tasks", id), updates as any);
+      // Ensure we don't try to save undefined to Firestore
+      const cleanUpdates: any = { ...updates };
+      Object.keys(cleanUpdates).forEach(key => cleanUpdates[key] === undefined && delete cleanUpdates[key]);
+      
+      await updateDoc(doc(db, "tasks", id), cleanUpdates);
     } catch (error) {
       console.error("Failed to update task:", error);
     }

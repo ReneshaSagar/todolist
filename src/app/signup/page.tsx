@@ -16,10 +16,6 @@ export default function SignupPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMode, setSuccessMode] = useState(false);
 
-  useEffect(() => {
-    if (user && user.emailVerified) router.push("/dashboard");
-  }, [user, router]);
-
   if (loading) return null;
 
   const handleEmailSignup = async (e: React.FormEvent) => {

@@ -11,6 +11,49 @@ export default function FocusMode() {
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [session, setSession] = useState<"Work" | "Break">("Work");
+  const [activeAmbiance, setActiveAmbiance] = useState<"lofi" | "rain" | null>(null);
+  
+  const lofiRef = React.useRef<HTMLAudioElement | null>(null);
+  const rainRef = React.useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // Initialize audio on client side
+    lofiRef.current = new Audio("https://stream.zeno.fm/0r0xa792kwzuv"); // Lofi Hip Hop live stream
+    rainRef.current = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"); // Placeholder for Rain, will use better one
+    
+    // Better rain/ambient source
+    rainRef.current.src = "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg";
+    rainRef.current.loop = true;
+    lofiRef.current.loop = true;
+
+    return () => {
+      lofiRef.current?.pause();
+      rainRef.current?.pause();
+    };
+  }, []);
+
+  const toggleAmbiance = (type: "lofi" | "rain") => {
+    if (activeAmbiance === type) {
+      if (type === "lofi") lofiRef.current?.pause();
+      if (type === "rain") rainRef.current?.pause();
+      setActiveAmbiance(null);
+    } else {
+      // Pause others
+      lofiRef.current?.pause();
+      rainRef.current?.pause();
+      
+      // Play target
+      if (type === "lofi") {
+        lofiRef.current!.volume = 0.4;
+        lofiRef.current?.play();
+      }
+      if (type === "rain") {
+        rainRef.current!.volume = 0.3;
+        rainRef.current?.play();
+      }
+      setActiveAmbiance(type);
+    }
+  };
 
   useEffect(() => {
     let interval: any = null;
@@ -92,12 +135,14 @@ export default function FocusMode() {
         <FocusOption 
           icon={<Music2 size={20} />} 
           label="Lofi Beats" 
-          onClick={() => {}} 
+          active={activeAmbiance === "lofi"}
+          onClick={() => toggleAmbiance("lofi")} 
         />
         <FocusOption 
           icon={<Coffee size={20} />} 
           label="Rain Ambiance" 
-          onClick={() => {}} 
+          active={activeAmbiance === "rain"}
+          onClick={() => toggleAmbiance("rain")} 
         />
       </div>
 
@@ -130,11 +175,18 @@ export default function FocusMode() {
   );
 }
 
-function FocusOption({ icon, label, onClick }: { icon: any; label: string; onClick: () => void }) {
+function FocusOption({ icon, label, active, onClick }: { icon: any; label: string; active?: boolean; onClick: () => void }) {
   return (
-    <button className="flex items-center gap-4 p-5 glass rounded-2xl hover:bg-white/5 transition-all text-left">
-      <div className="text-brand">{icon}</div>
-      <span className="text-sm font-bold">{label}</span>
+    <button 
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-4 p-5 glass rounded-2xl transition-all text-left",
+        active ? "bg-brand/20 border-brand/50" : "hover:bg-white/5 border-transparent"
+      )}
+    >
+      <div className={cn(active ? "text-white" : "text-brand")}>{icon}</div>
+      <span className={cn("text-sm font-bold", active ? "text-white" : "text-subdued")}>{label}</span>
+      {active && <motion.div layoutId="active-ambiance" className="ml-auto w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_var(--brand-primary)]" />}
     </button>
   );
 }
