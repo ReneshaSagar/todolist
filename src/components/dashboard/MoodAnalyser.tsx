@@ -27,20 +27,16 @@ export default function MoodAnalyser() {
     setIsTyping(true);
 
     try {
-      const response = await fetch("/api/plan", {
+      const response = await fetch("/api/mood", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
-              prompt: `This is a mood analysis chat. The user says: "${input}". 
-              Review the chat history and analyze their emotional state. 
-              Ask 1 supportive follow-up question or provide a chill insight. 
-              ALSO, if you have enough context, suggest ONE specific song and artist that fits their mood (something soothing for stress, high-energy for focus, etc.).
-              Return JSON: { "reply": "your supportive message", "suggestion": { "song": "name", "artist": "name" } | null }` 
+              prompt: `User says: "${input}". Previous context: ${messages.slice(-2).map(m => m.content).join(" | ")}` 
           })
       });
 
       const data = await response.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.reply || data.message }]);
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply || "I hear you. Let's keep the flow going." }]);
       if (data.suggestion) setSuggestion(data.suggestion);
     } catch (error) {
       setMessages(prev => [...prev, { role: "assistant", content: "My neural links are a bit fuzzy. How about we just keep vibing?" }]);

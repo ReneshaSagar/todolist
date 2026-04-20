@@ -15,7 +15,9 @@ import {
   LogOut,
   BrainCircuit,
   Calendar,
-  MoreHorizontal
+  MoreHorizontal,
+  X,
+  Bell
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
