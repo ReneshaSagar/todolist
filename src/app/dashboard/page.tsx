@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import FocusMode from "@/components/dashboard/FocusMode";
 import DailyFact from "@/components/dashboard/DailyFact";
+import NeuralPlanner from "@/components/dashboard/NeuralPlanner";
 
 export default function Dashboard() {
   const { user, logout, loading: authLoading } = useAuth();
@@ -252,19 +253,9 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="max-w-3xl mx-auto mt-20 text-center"
+                className="w-full"
               >
-                 <div className="w-20 h-20 rounded-2xl glass mx-auto flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(79,70,229,0.2)] border border-brand/20">
-                   <BrainCircuit className="w-10 h-10 text-brand" />
-                 </div>
-                 <h2 className="text-3xl font-bold mb-4">Neural Planner (Phase 2)</h2>
-                 <p className="text-subdued max-w-lg mx-auto leading-relaxed">
-                    The Agentic AI scheduler is pending integration. Once active, the AI will accept natural language context and structurally compute an optimized itinerary for your day.
-                 </p>
-                 <div className="mt-10 p-6 glass-panel rounded-3xl inline-block text-left text-sm text-subdued border-dashed border-white/10">
-                    <p className="font-mono mb-2 text-white/40">// Example Command</p>
-                    <p>"I have a math assignment due tomorrow, hit the gym for 1 hour, and need 30 minutes to read. Optimise my evening."</p>
-                 </div>
+                 <NeuralPlanner />
               </motion.div>
             )}
           </AnimatePresence>
