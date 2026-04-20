@@ -2,12 +2,12 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { LogIn } from "lucide-react";
+import { LogIn, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function LoginPage() {
-  const { user, signInWithGoogle, loading } = useAuth();
+  const { user, loginAsGuest, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -27,20 +27,31 @@ export default function LoginPage() {
           <LogIn className="w-8 h-8 text-black" />
         </div>
         
-        <h1 className="text-3xl font-black mb-2 tracking-tighter">Welcome Back.</h1>
+        <h1 className="text-3xl font-black mb-2 tracking-tighter text-white">Welcome Back.</h1>
         <p className="text-subdued mb-10 font-medium">Log in to resume your flow state.</p>
         
-        <button 
-          onClick={signInWithGoogle}
-          className="w-full py-4 bg-white text-black font-bold rounded-full hover:scale-[1.02] transition-transform flex items-center justify-center gap-3"
-        >
-          <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-          Continue with Google
-        </button>
+        <div className="space-y-4">
+          <button 
+            onClick={() => loginAsGuest()}
+            className="w-full py-4 bg-brand text-black font-black rounded-full hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-lg shadow-brand/20 group relative overflow-hidden"
+          >
+            <Zap className="w-5 h-5 fill-black" />
+            Continue as Guest
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+
+          <button 
+            disabled
+            className="w-full py-4 bg-white/5 border border-white/10 text-subdued font-bold rounded-full flex items-center justify-center gap-3 cursor-not-allowed opacity-50"
+          >
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5 grayscale" alt="Google" />
+            Google Login (Soon)
+          </button>
+        </div>
         
         <div className="mt-8 pt-8 border-t border-white/5">
-          <p className="text-xs text-subdued uppercase tracking-widest font-bold">
-            No password, no friction.
+          <p className="text-xs text-subdued uppercase tracking-widest font-bold font-mono">
+            Direct Entry Enabled (Demo Mode)
           </p>
         </div>
       </motion.div>

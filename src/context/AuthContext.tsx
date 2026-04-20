@@ -24,13 +24,18 @@ const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
     return await signIn("credentials", { ...credentials, redirect: false });
   };
 
+  const loginAsGuest = async () => {
+    return await signIn("credentials", { isGuest: "true", redirect: false });
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user: session?.user, 
       loading: status === "loading", 
       logout,
       login,
-      isDemoMode: false 
+      loginAsGuest,
+      isDemoMode: session?.user?.email === "guest@flowstate.ai"
     }}>
       {children}
     </AuthContext.Provider>

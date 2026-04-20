@@ -16,6 +16,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        if (credentials?.isGuest === "true") {
+          const guestUser = await prisma.user.upsert({
+            where: { email: "guest@flowstate.ai" },
+            update: {},
+            create: {
+              email: "guest@flowstate.ai",
+              name: "Guest Explorer",
+              password: await bcrypt.hash("guest-mode-frictionless", 10),
+            }
+          });
+          return guestUser;
+        }
+
         if (!credentials?.email || !credentials?.password) return null;
         
         const user = await prisma.user.findUnique({

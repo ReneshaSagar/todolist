@@ -5,30 +5,30 @@ import { useTasks } from "@/context/TaskContext";
 import { useSpotify } from "@/context/SpotifyContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  BarChart3, 
   CheckCircle2, 
   Circle, 
   LayoutDashboard, 
   ListTodo, 
   Music, 
   Plus, 
-  Search,
-  Settings,
   Timer,
   LogOut,
-  Zap
+  BrainCircuit,
+  Calendar,
+  MoreHorizontal
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import FocusMode from "@/components/dashboard/FocusMode";
+import DailyFact from "@/components/dashboard/DailyFact";
 
 export default function Dashboard() {
   const { user, logout, loading: authLoading } = useAuth();
-  const { tasks, addTask, updateTask, mood, setMood } = useTasks();
+  const { tasks, addTask, updateTask } = useTasks();
   const { isConnected, connect, currentTrack } = useSpotify();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
@@ -37,142 +37,199 @@ export default function Dashboard() {
   if (authLoading || !user) return null;
 
   return (
-    <div className="flex h-screen bg-black overflow-hidden font-sans">
+    <div className="flex h-screen bg-background overflow-hidden font-sans">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 flex flex-col bg-black">
-        <div className="p-8">
-          <h2 className="text-2xl font-black tracking-tighter text-brand italic">FLOWSTATE</h2>
+      <aside className="w-64 border-r border-white/5 flex flex-col bg-card/50 backdrop-blur-3xl relative z-10">
+        <div className="p-8 flex items-center gap-3">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-brand to-brand-secondary flex items-center justify-center p-1 shadow-[0_0_10px_rgba(79,70,229,0.3)]">
+            <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-white">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-bold tracking-tight text-white">FlowState</h2>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-1">
+          <p className="px-4 text-[10px] font-bold text-subdued uppercase tracking-widest mb-2 mt-4">Overview</p>
           <NavItem 
-            icon={<LayoutDashboard size={20} />} 
+            icon={<LayoutDashboard size={18} />} 
             label="Dashboard" 
             active={activeTab === "dashboard"} 
             onClick={() => setActiveTab("dashboard")} 
           />
           <NavItem 
-            icon={<ListTodo size={20} />} 
+            icon={<ListTodo size={18} />} 
             label="Tasks" 
             active={activeTab === "tasks"} 
             onClick={() => setActiveTab("tasks")} 
           />
           <NavItem 
-            icon={<Timer size={20} />} 
-            label="Focus" 
+            icon={<Timer size={18} />} 
+            label="Focus Mode" 
             active={activeTab === "focus"} 
             onClick={() => setActiveTab("focus")} 
           />
           <NavItem 
-            icon={<BarChart3 size={20} />} 
-            label="Stats" 
-            active={activeTab === "stats"} 
-            onClick={() => setActiveTab("stats")} 
+            icon={<BrainCircuit size={18} />} 
+            label="AI Planner" 
+            active={activeTab === "ai"} 
+            onClick={() => setActiveTab("ai")} 
           />
         </nav>
 
-        <div className="p-4 mt-auto">
-          {!isConnected ? (
-             <button 
-                onClick={connect}
-                className="w-full py-3 bg-brand text-black font-bold rounded-full text-xs uppercase tracking-widest hover:scale-105 transition-transform"
-             >
-                Connect Spotify
+        <div className="p-4 mt-auto space-y-4">
+           {/* Spotify Widget Preview */}
+           <div className="glass-dark p-4 rounded-2xl border border-white/5">
+             {!isConnected ? (
+                 <button 
+                    onClick={connect}
+                    className="w-full py-2.5 bg-[#1DB954] text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+                 >
+                    <Music size={14} /> Connect Spotify
+                 </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded bg-[#1DB954]/20 flex items-center justify-center overflow-hidden">
+                     {currentTrack?.album?.images?.[0] ? 
+                       <img src={currentTrack.album.images[0].url} className="w-full h-full object-cover" /> :
+                       <Music size={14} className="text-[#1DB954]" />
+                     }
+                  </div>
+                  <div className="overflow-hidden flex-1">
+                    <p className="text-[11px] font-bold truncate text-white">{currentTrack?.name || "Ready to Flow"}</p>
+                    <p className="text-[9px] text-subdued truncate">{currentTrack?.artists?.[0]?.name || "Spotify Sync Active"}</p>
+                  </div>
+                </div>
+              )}
+           </div>
+
+           {/* User Profile */}
+           <div className="flex items-center gap-3 px-2">
+             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-secondary to-brand flex items-center justify-center border border-white/10 text-xs font-bold shadow-md">
+               {(user.displayName || user.email || "G")[0].toUpperCase()}
+             </div>
+             <div className="flex-1 overflow-hidden">
+               <p className="text-xs font-bold text-white truncate">{user.displayName || user.email}</p>
+               <p className="text-[10px] text-subdued">OS Explorer</p>
+             </div>
+             <button onClick={logout} className="p-1.5 hover:bg-white/10 rounded-md text-subdued hover:text-white transition-colors">
+               <LogOut size={14} />
              </button>
-          ) : (
-            <div className="p-4 glass rounded-[24px] flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand/20 rounded-lg flex items-center justify-center">
-                <Music size={20} className="text-brand" />
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-xs font-bold truncate text-white">{currentTrack?.name || "Listening..."}</p>
-                <p className="text-[10px] text-subdued truncate">{currentTrack?.artists?.[0]?.name || "Spotify"}</p>
-              </div>
-            </div>
-          )}
+           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-[#0c0c0c] to-black">
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-10">
-          <div className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-full border border-white/5">
-            <span className="text-[10px] font-black text-subdued uppercase tracking-widest">System Mood</span>
-            <div className="flex gap-2">
-               {["Lazy", "Neutral", "Energetic"].map((m) => (
-                 <button
-                   key={m}
-                   onClick={() => setMood(m as any)}
-                   className={cn(
-                     "px-3 py-1 text-[10px] font-black uppercase rounded-full transition-all",
-                     mood === m ? "bg-brand text-black shadow-lg shadow-brand/20" : "text-subdued hover:text-white"
-                   )}
-                 >
-                   {m}
-                 </button>
-               ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-             <div className="text-right">
-                <p className="text-[10px] font-black text-brand uppercase tracking-widest">XP Level 14</p>
-                <p className="text-sm font-black tracking-tight">{user.displayName || user.email?.split('@')[0]}</p>
-             </div>
-             <button onClick={logout} className="p-2 hover:bg-white/5 rounded-xl text-subdued transition-colors">
-               <LogOut size={20} />
-             </button>
-          </div>
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        <header className="h-16 border-b border-white/5 flex items-center justify-end px-8 absolute top-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-md">
+           <p className="text-xs text-subdued font-medium flex items-center gap-2">
+             <Calendar size={14} /> {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+           </p>
         </header>
 
-        <section className="flex-1 overflow-y-auto p-10">
+        <section className="flex-1 overflow-y-auto pt-24 px-8 pb-10 scroll-smooth">
           <AnimatePresence mode="wait">
+            {activeTab === "dashboard" && (
+              <motion.div 
+                key="dashboard"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-5xl mx-auto space-y-8"
+              >
+                <div className="flex items-center justify-between mb-2">
+                   <h1 className="text-3xl font-bold tracking-tight">Welcome to FlowState</h1>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                   <div className="lg:col-span-2 space-y-6">
+                      <div className="glass-panel p-8 rounded-3xl relative overflow-hidden group">
+                        <div className="relative z-10 w-2/3">
+                          <h3 className="text-2xl font-bold mb-2">AI Neural Planner</h3>
+                          <p className="text-subdued text-sm mb-6 leading-relaxed">Agentic AI is offline in this phase. Once deployed, the AI will restructure your workflow dynamically.</p>
+                          <button onClick={() => setActiveTab("ai")} className="px-5 py-2.5 bg-white text-black text-xs font-bold rounded-full hover:bg-gray-200 transition-colors">
+                            Initialize AI
+                          </button>
+                        </div>
+                        <BrainCircuit className="absolute -right-10 -bottom-10 w-64 h-64 text-brand/5 group-hover:text-brand/10 transition-colors duration-500" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-4 mt-8">
+                          <h3 className="text-lg font-bold">Today's Objectives</h3>
+                          <button onClick={() => setActiveTab("tasks")} className="text-xs text-brand hover:text-brand-accent transition-colors font-semibold">View All</button>
+                        </div>
+                        <div className="space-y-3">
+                          {tasks.slice(0, 3).map((task) => (
+                            <div key={task.id} className="glass p-4 rounded-2xl flex items-center gap-4">
+                              <div className={cn("w-2 h-2 rounded-full", task.completed ? "bg-brand" : "bg-white/20")} />
+                              <span className={cn("text-sm font-medium", task.completed && "line-through text-subdued")}>{task.title}</span>
+                            </div>
+                          ))}
+                          {tasks.length === 0 && <p className="text-sm text-subdued py-4">No tasks tracked yet.</p>}
+                        </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-6">
+                      <DailyFact />
+
+                      <div className="glass-panel p-6 rounded-3xl h-64 flex flex-col">
+                        <h3 className="text-sm font-bold mb-auto flex items-center gap-2"><Timer size={16} /> Fast Focus</h3>
+                        <div className="text-center">
+                           <p className="text-4xl font-black tabular-nums tracking-tighter mb-4">25:00</p>
+                           <button onClick={() => setActiveTab("focus")} className="w-full py-3 bg-brand/10 text-brand border border-brand/20 hover:bg-brand/20 rounded-xl text-sm font-bold transition-all">
+                             Enter Focus Mode
+                           </button>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === "tasks" && (
               <motion.div 
                 key="tasks"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="max-w-4xl mx-auto space-y-10"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-4xl mx-auto"
               >
-                {/* AI Plan Banner */}
-                <div className="p-10 rounded-[40px] glass-dark border border-brand/10 relative overflow-hidden group">
-                  <div className="relative z-10">
-                      <div className="flex items-center gap-2 text-brand mb-4">
-                        <Zap size={16} fill="currentColor" />
-                        <span className="text-xs font-bold uppercase tracking-widest">AI Command</span>
-                      </div>
-                      <h3 className="text-3xl font-black mb-3 tracking-tighter">Initialize Daily Flow.</h3>
-                      <p className="text-subdued mb-8 max-w-sm font-medium leading-relaxed">Let FlowState AI analyze your deadlines and energetic state to structure your grind.</p>
-                      <button className="px-8 py-3 bg-brand text-black font-bold rounded-full text-xs uppercase tracking-widest hover:scale-105 transition-transform">
-                        Plan My Day
-                      </button>
-                  </div>
-                  <BarChart3 className="absolute -right-8 -bottom-8 w-60 h-60 text-brand/5 group-hover:text-brand/10 transition-transform duration-700" />
+                <div className="flex items-center justify-between mb-8">
+                  <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+                  <button 
+                    onClick={() => addTask({ title: "New Objective", priority: "Medium" })}
+                    className="flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm font-bold rounded-lg shadow-lg hover:bg-brand-secondary transition-colors"
+                  >
+                    <Plus size={16} /> Create Task
+                  </button>
                 </div>
 
-                {/* Task List */}
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-3xl font-black tracking-tighter">Current Quests</h3>
-                    <button 
-                      onClick={() => addTask({ title: "Deep Work Initiative", priority: "High" })}
-                      className="flex items-center gap-2 text-brand text-xs font-bold uppercase tracking-[0.2em] hover:translate-x-1 transition-transform"
-                    >
-                      <Plus size={16} /> New Entry
-                    </button>
-                  </div>
-
-                  <div className="grid gap-4 pb-20">
-                    {tasks.map((task) => (
-                      <TaskItem key={task.id} task={task} onToggle={() => updateTask(task.id, { completed: !task.completed })} />
-                    ))}
-                    {tasks.length === 0 && (
-                      <div className="py-24 text-center glass rounded-[40px] border-dashed border-white/5">
-                        <p className="text-subdued font-bold text-lg">System idle. All objectives secured.</p>
+                <div className="space-y-3">
+                  {tasks.map((task) => (
+                    <div key={task.id} className="group flex items-center gap-4 p-4 glass rounded-2xl hover:border-white/10 transition-all">
+                      <button onClick={() => updateTask(task.id, { completed: !task.completed })} className="text-white/30 hover:text-brand transition-colors">
+                        {task.completed ? <CheckCircle2 className="text-brand w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                      </button>
+                      <div className="flex-1">
+                        <h4 className={cn("text-base font-medium transition-all", task.completed && "line-through text-subdued")}>{task.title}</h4>
                       </div>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <span className={cn("text-[10px] uppercase font-bold px-2 py-1 rounded bg-white/5", 
+                           task.priority === "High" ? "text-orange-400" : "text-subdued"
+                         )}>{task.priority}</span>
+                         <button className="p-1.5 text-subdued hover:text-white rounded"><MoreHorizontal size={16} /></button>
+                      </div>
+                    </div>
+                  ))}
+                  {tasks.length === 0 && (
+                    <div className="py-20 text-center border border-dashed border-white/10 rounded-3xl">
+                      <p className="text-subdued font-medium">Your inbox is clear. Take a breath.</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -180,35 +237,34 @@ export default function Dashboard() {
             {activeTab === "focus" && (
               <motion.div 
                 key="focus"
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.05 }}
-                className="h-full"
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="h-[80vh]"
               >
                 <FocusMode />
               </motion.div>
             )}
 
-            {activeTab === "dashboard" && (
+            {activeTab === "ai" && (
               <motion.div 
-                key="dashboard"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="grid grid-cols-2 gap-8"
+                key="ai"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-3xl mx-auto mt-20 text-center"
               >
-                <div className="glass p-10 rounded-[40px]">
-                  <h3 className="text-xl font-bold mb-6">Grind Stats</h3>
-                  <div className="aspect-video bg-white/5 rounded-3xl flex items-center justify-center">
-                    <BarChart3 className="text-brand w-12 h-12 opacity-20" />
-                  </div>
-                </div>
-                <div className="glass p-10 rounded-[40px]">
-                  <h3 className="text-xl font-bold mb-6">XP Progression</h3>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-brand w-[65%]" />
-                  </div>
-                  <p className="mt-4 text-xs font-bold text-subdued uppercase">640 / 1000 XP to Level 15</p>
-                </div>
+                 <div className="w-20 h-20 rounded-2xl glass mx-auto flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(79,70,229,0.2)] border border-brand/20">
+                   <BrainCircuit className="w-10 h-10 text-brand" />
+                 </div>
+                 <h2 className="text-3xl font-bold mb-4">Neural Planner (Phase 2)</h2>
+                 <p className="text-subdued max-w-lg mx-auto leading-relaxed">
+                    The Agentic AI scheduler is pending integration. Once active, the AI will accept natural language context and structurally compute an optimized itinerary for your day.
+                 </p>
+                 <div className="mt-10 p-6 glass-panel rounded-3xl inline-block text-left text-sm text-subdued border-dashed border-white/10">
+                    <p className="font-mono mb-2 text-white/40">// Example Command</p>
+                    <p>"I have a math assignment due tomorrow, hit the gym for 1 hour, and need 30 minutes to read. Optimise my evening."</p>
+                 </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -223,34 +279,12 @@ function NavItem({ icon, label, active, onClick }: { icon: any; label: string; a
     <button 
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all",
-        active ? "bg-white/5 text-brand" : "text-subdued hover:bg-white/5 hover:text-white"
+        "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all group",
+        active ? "bg-white/10 text-white shadow-inner border border-white/5" : "text-subdued hover:bg-white/5 hover:text-white"
       )}
     >
-      {icon}
-      <span className="text-sm font-black uppercase tracking-widest">{label}</span>
-      {active && <motion.div layoutId="nav-pill" className="ml-auto w-1 h-1 bg-brand rounded-full shadow-[0_0_10px_var(--spotify-green)]" />}
+      <span className={cn(active ? "text-brand" : "text-subdued group-hover:text-white")}>{icon}</span>
+      {label}
     </button>
-  );
-}
-
-function TaskItem({ task, onToggle }: { task: any; onToggle: () => void }) {
-  return (
-    <div className="group flex items-center gap-8 p-8 glass rounded-[32px] hover:border-white/10 transition-all cursor-pointer">
-      <button onClick={onToggle} className="transition-transform active:scale-95">
-        {task.completed ? <CheckCircle2 className="text-brand w-7 h-7" /> : <Circle className="text-white/10 group-hover:text-brand transition-colors w-7 h-7" />}
-      </button>
-      <div className="flex-1">
-        <h4 className={cn("text-xl font-black transition-all tracking-tight", task.completed && "line-through text-subdued")}>{task.title}</h4>
-        <div className="flex gap-6 mt-2">
-          <span className={cn("text-[10px] font-black uppercase tracking-[0.2em]", 
-            task.priority === "Urgent" ? "text-red-500" : task.priority === "High" ? "text-orange-500" : "text-brand"
-          )}>{task.priority} Priority</span>
-          <span className="text-[10px] text-white/20 uppercase tracking-[0.2em] font-black">
-            + {task.xp} XP
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }
