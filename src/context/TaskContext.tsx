@@ -2,6 +2,19 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  serverTimestamp 
+} from "firebase/firestore";
 
 export type Priority = "Low" | "Medium" | "High" | "Urgent";
 export type Mood = "Lazy" | "Neutral" | "Energetic";
@@ -45,37 +58,46 @@ export const TaskProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const fetchTasks = async () => {
-      try {
-        const res = await fetch("/api/tasks");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setTasks(data.map(t => ({ 
-            ...t, 
-            createdAt: new Date(t.createdAt),
-            dueDate: t.dueDate ? new Date(t.dueDate) : undefined
-          })));
-        }
-      } catch (error) {
-        console.error("Failed to fetch tasks:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const q = query(
+      collection(db, "tasks"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
 
-    fetchTasks();
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedTasks = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          dueDate: data.dueDate?.toDate() || undefined
+        } as Task;
+      });
+      setTasks(fetchedTasks);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Firestore error:", error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const addTask = async (task: Partial<Task>) => {
     if (!user) return;
     try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(task)
+      await addDoc(collection(db, "tasks"), {
+        ...task,
+        userId: user.uid,
+        title: task.title || "New Task",
+        priority: task.priority || "Medium",
+        xp: task.xp || 20,
+        completed: false,
+        tags: task.tags || [],
+        subtasks: task.subtasks || [],
+        createdAt: serverTimestamp()
       });
-      const newTask = await res.json();
-      setTasks(prev => [newTask, ...prev]);
     } catch (error) {
       console.error("Failed to add task:", error);
     }
@@ -83,13 +105,7 @@ export const TaskProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
-      const res = await fetch(`/api/tasks/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-      const updatedTask = await res.json();
-      setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
+      await updateDoc(doc(db, "tasks", id), updates as any);
     } catch (error) {
       console.error("Failed to update task:", error);
     }
@@ -97,8 +113,7 @@ export const TaskProvider = ({ children }: { children: React.ReactNode }) => {
 
   const deleteTask = async (id: string) => {
     try {
-      await fetch(`/api/tasks/${id}`, { method: "DELETE" });
-      setTasks(prev => prev.filter(t => t.id !== id));
+      await deleteDoc(doc(db, "tasks", id));
     } catch (error) {
       console.error("Failed to delete task:", error);
     }
